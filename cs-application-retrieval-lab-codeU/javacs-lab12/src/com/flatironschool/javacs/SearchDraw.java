@@ -1,5 +1,3 @@
-package com.flatironschool.javacs;
-
 /*
  * Author: Tessa Jensen
  * August 7th, 2016
@@ -45,11 +43,11 @@ public class SearchDraw implements ActionListener {
 	JLabel fill2 = new JLabel("aaaaaaaaa");
 	JLabel fill3 = new JLabel("aaaaaaaaa");
 	JLabel fill4 = new JLabel("aaaaaaaaa");
-	JLabel res1 = new JLabel();
-	JLabel res2 = new JLabel();
-	JLabel res3 = new JLabel();
-	JLabel res4 = new JLabel();
-	JLabel res5 = new JLabel();
+	JHyperlink res1 = new JHyperlink("");
+	JHyperlink res2 = new JHyperlink("");
+	JHyperlink res3 = new JHyperlink("");
+	JHyperlink res4 = new JHyperlink("");
+	JHyperlink res5 = new JHyperlink("");
 	
 	
 	JTextField sf = new JTextField(60);
@@ -78,11 +76,6 @@ public class SearchDraw implements ActionListener {
 		lb_font(fill2, "Copperplate", 20, LB);
 		lb_font(fill3, "Copperplate", 20, LB);
 		lb_font(fill4, "Copperplate", 20, LB);
-		lb_font(res1, "Comic Sans", 14, DG);
-		lb_font(res2, "Comic Sans", 14, DG);
-		lb_font(res3, "Comic Sans", 14, DG);
-		lb_font(res4, "Comic Sans", 14, DG);
-		lb_font(res5, "Comic Sans", 14, DG);
 		
 		//Set Action Listener to search bar & button
 		sf.addActionListener(this);
@@ -146,11 +139,6 @@ public class SearchDraw implements ActionListener {
 				res3.setText(list[2]);
 				res4.setText(list[3]);
 				res5.setText(list[4]);
-				//res1.setText("<html><a href=\" " + list[0]+ "\"> click </a></html>");
-				//res2.setText("<html><a href=\" " + list[1]+ "\"> click </a></html>");
-				//res3.setText("<html><a href=\" " + list[2]+ "\"> click </a></html>");
-				//res4.setText("<html><a href=\" " + list[3]+ "\"> click </a></html>");
-				//res5.setText("<html><a href=\" " + list[4]+ "\"> click </a></html>");
 			}
 
 		}
