@@ -121,8 +121,7 @@ public class SearchDraw implements ActionListener {
 			srchTerm = sf.getText();
 			history.println(srchTerm);
 			
-			//Run search protocol
-			//Fill in returning text
+			String[] list = search(srchTerm);
 			res1.setText(srchTerm);
 			res2.setText("Waiting");
 			res3.setText("Waiting");
@@ -137,7 +136,21 @@ public class SearchDraw implements ActionListener {
 			history.close();
 		}
 	}
-	 public void History(Scanner reader)
+	
+	/*
+	 * search calls on WikiSearch and returns the required list for display
+	 */
+	public String[] search(String term){
+		Map<String,Integer> help = wikisearch(term);
+		
+		
+	}
+	
+	
+	/*
+	 * Displays the history currently recorded
+	 */
+	public void History(Scanner reader)
 	  {
 		JFrame hist = new JFrame();
 		JPanel giant4 = new JPanel();
