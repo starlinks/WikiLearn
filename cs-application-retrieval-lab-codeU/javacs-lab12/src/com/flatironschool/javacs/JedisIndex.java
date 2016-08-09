@@ -16,7 +16,7 @@ import redis.clients.jedis.Transaction;
 
 /**
  * Represents a Redis-backed web search index.
- * 
+ *
  */
 public class JedisIndex {
 
@@ -24,25 +24,25 @@ public class JedisIndex {
 
 	/**
 	 * Constructor.
-	 * 
+	 *
 	 * @param jedis
 	 */
 	public JedisIndex(Jedis jedis) {
 		this.jedis = jedis;
 	}
-	
+
 	/**
 	 * Returns the Redis key for a given search term.
-	 * 
+	 *
 	 * @return Redis key.
 	 */
 	private String urlSetKey(String term) {
 		return "URLSet:" + term;
 	}
-	
+
 	/**
 	 * Returns the Redis key for a URL's TermCounter.
-	 * 
+	 *
 	 * @return Redis key.
 	 */
 	private String termCounterKey(String url) {
@@ -51,7 +51,7 @@ public class JedisIndex {
 
 	/**
 	 * Checks whether we have a TermCounter for a given URL.
-	 * 
+	 *
 	 * @param url
 	 * @return
 	 */
@@ -59,10 +59,10 @@ public class JedisIndex {
 		String redisKey = termCounterKey(url);
 		return jedis.exists(redisKey);
 	}
-	
+
 	/**
 	 * Adds a URL to the set associated with `term`.
-	 * 
+	 *
 	 * @param term
 	 * @param tc
 	 */
@@ -71,8 +71,8 @@ public class JedisIndex {
 	}
 
 	/**
-	 * Looks up a search term and returns a set of URLs.
-	 * 
+	 * Looks up a search term and returns a set of URLs. (total number of ducments that include the term)
+	 *
 	 * @param term
 	 * @return Set of URLs.
 	 */
@@ -83,7 +83,7 @@ public class JedisIndex {
 
 	/**
 	 * Looks up a term and returns a map from URL to count.
-	 * 
+	 *
 	 * @param term
 	 * @return Map from URL to count.
 	 */
@@ -99,7 +99,7 @@ public class JedisIndex {
 
 	/**
 	 * Looks up a term and returns a map from URL to count.
-	 * 
+	 *
 	 * @param term
 	 * @return Map from URL to count.
 	 */
@@ -130,7 +130,7 @@ public class JedisIndex {
 
 	/**
 	 * Returns the number of times the given term appears at the given URL.
-	 * 
+	 *
 	 * @param url
 	 * @param term
 	 * @return
@@ -142,34 +142,52 @@ public class JedisIndex {
 	}
 
 	/**
+	* Provide scores using tf-idf formula
+	* for each url : getCount * urlSet.size/ size of getCounts
+	*/
+	public Double getScore(String url, String term, Integer document_size) {
+		return new Double(getCount(url, term)*(urlSet().size()/document_size));
+	}
+
+	public Map<String, Double> getScores(String term) {
+		Map<String, Double> score_map = new HashMap<String, Double>();
+		Set<String> urls = getURLs(term);
+		for (String url: urls) {
+			Double score = getScore(url, term, urls.size());
+			score_map.put(url, score);
+		}
+		return score_map;
+	}
+
+	/**
 	 * Add a page to the index.
-	 * 
+	 *
 	 * @param url         URL of the page.
 	 * @param paragraphs  Collection of elements that should be indexed.
 	 */
 	public void indexPage(String url, Elements paragraphs) {
 		System.out.println("Indexing " + url);
-		
+
 		// make a TermCounter and count the terms in the paragraphs
 		TermCounter tc = new TermCounter(url);
 		tc.processElements(paragraphs);
-		
+
 		// push the contents of the TermCounter to Redis
 		pushTermCounterToRedis(tc);
 	}
 
 	/**
 	 * Pushes the contents of the TermCounter to Redis.
-	 * 
+	 *
 	 * @param tc
 	 * @return List of return values from Redis.
 	 */
 	public List<Object> pushTermCounterToRedis(TermCounter tc) {
 		Transaction t = jedis.multi();
-		
+
 		String url = tc.getLabel();
 		String hashname = termCounterKey(url);
-		
+
 		// if this page has already been indexed; delete the old hash
 		t.del(hashname);
 
@@ -186,14 +204,14 @@ public class JedisIndex {
 
 	/**
 	 * Prints the contents of the index.
-	 * 
+	 *
 	 * Should be used for development and testing, not production.
 	 */
 	public void printIndex() {
 		// loop through the search terms
 		for (String term: termSet()) {
 			System.out.println(term);
-			
+
 			// for each term, print the pages where it appears
 			Set<String> urls = getURLs(term);
 			for (String url: urls) {
@@ -205,9 +223,9 @@ public class JedisIndex {
 
 	/**
 	 * Returns the set of terms that have been indexed.
-	 * 
+	 *
 	 * Should be used for development and testing, not production.
-	 * 
+	 *
 	 * @return
 	 */
 	public Set<String> termSet() {
@@ -225,10 +243,33 @@ public class JedisIndex {
 	}
 
 	/**
+		* Returns the number of how many urls there are.
+		* the size of urlSet is the number of documents there are (N)
+		* building all the keys of urls (total that was index)
+		*/
+	public Set<String> urlSet() {
+		Set<String> cachedUrlSet = null;
+		if (cachedUrlSet != null) 
+			return cachedUrlSet;
+		Set<String> keys = termCounterKeys(); 
+		Set<String> urls = new HashSet<String>();
+		for (String key: keys){
+			String[] array = key.split(":", 2);
+			if (array.length < 2){
+				urls.add("");
+			} else{
+				urls.add(array[1]);
+			}
+		}
+		cachedUrlSet = urls;
+		return urls;
+	}
+
+	/**
 	 * Returns URLSet keys for the terms that have been indexed.
-	 * 
+	 *
 	 * Should be used for development and testing, not production.
-	 * 
+	 *
 	 * @return
 	 */
 	public Set<String> urlSetKeys() {
@@ -237,9 +278,9 @@ public class JedisIndex {
 
 	/**
 	 * Returns TermCounter keys for the URLS that have been indexed.
-	 * 
+	 *
 	 * Should be used for development and testing, not production.
-	 * 
+	 *
 	 * @return
 	 */
 	public Set<String> termCounterKeys() {
@@ -248,9 +289,9 @@ public class JedisIndex {
 
 	/**
 	 * Deletes all URLSet objects from the database.
-	 * 
+	 *
 	 * Should be used for development and testing, not production.
-	 * 
+	 *
 	 * @return
 	 */
 	public void deleteURLSets() {
@@ -264,9 +305,9 @@ public class JedisIndex {
 
 	/**
 	 * Deletes all URLSet objects from the database.
-	 * 
+	 *
 	 * Should be used for development and testing, not production.
-	 * 
+	 *
 	 * @return
 	 */
 	public void deleteTermCounters() {
@@ -280,9 +321,9 @@ public class JedisIndex {
 
 	/**
 	 * Deletes all keys from the database.
-	 * 
+	 *
 	 * Should be used for development and testing, not production.
-	 * 
+	 *
 	 * @return
 	 */
 	public void deleteAllKeys() {
@@ -296,26 +337,42 @@ public class JedisIndex {
 
 	/**
 	 * @param args
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public static void main(String[] args) throws IOException {
 		Jedis jedis = JedisMaker.make();
 		JedisIndex index = new JedisIndex(jedis);
-		
+
 		//index.deleteTermCounters();
 		//index.deleteURLSets();
 		//index.deleteAllKeys();
 		loadIndex(index);
-		
-		Map<String, Integer> map = index.getCountsFaster("the");
+
+		Map<String, Integer> map = index.getCountsFaster("java");
 		for (Entry<String, Integer> entry: map.entrySet()) {
+			System.out.println(entry);
+		}
+		
+		map = index.getCountsFaster("programming");
+		for (Entry<String, Integer> entry: map.entrySet()) {
+			System.out.println(entry);
+		}
+		
+		Map<String, Double> score_map = index.getScores("java");
+		for (Entry<String, Double> entry: score_map.entrySet()) {
+			System.out.println(entry);
+		}
+		
+		score_map = index.getScores("programming");
+		for (Entry<String, Double> entry: score_map.entrySet()) {
 			System.out.println(entry);
 		}
 	}
 
+
 	/**
 	 * Stores two pages in the index for testing purposes.
-	 * 
+	 *
 	 * @return
 	 * @throws IOException
 	 */
@@ -325,12 +382,9 @@ public class JedisIndex {
 		String url = "https://en.wikipedia.org/wiki/Java_(programming_language)";
 		Elements paragraphs = wf.readWikipedia(url);
 		index.indexPage(url, paragraphs);
-		
+
 		url = "https://en.wikipedia.org/wiki/Programming_language";
 		paragraphs = wf.readWikipedia(url);
 		index.indexPage(url, paragraphs);
-		
-		
-		
 	}
 }
