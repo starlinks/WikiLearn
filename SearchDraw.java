@@ -1,3 +1,5 @@
+package com.flatironschool.javacs;
+
 /*
  * Author: Tessa Jensen
  * August 7th, 2016
@@ -46,25 +48,29 @@ public class SearchDraw implements ActionListener {
 	JLabel res1 = new JLabel();
 	JLabel res2 = new JLabel();
 	JLabel res3 = new JLabel();
+	JLabel res4 = new JLabel();
+	JLabel res5 = new JLabel();
+	
 	
 	JTextField sf = new JTextField(60);
 	JButton sb = new JButton("Search");
 	JButton shButton = new JButton("History");
 	
+	
 	Color W = Color.white;
+	Color B = Color.black;
 	Color LG = new Color(160,160,160);
 	Color DG = new Color(96,96,96);
 	Color LB = new Color(135,206,235);
 	
 	String srchTerm = "";
-	
 	PrintWriter history = OpenFile.openToWrite("history.txt");
 	
 	public SearchDraw(){
 		
 		//Set background panel
 		back.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
-		back.setLayout(new GridLayout(8,1));
+		back.setLayout(new GridLayout(10,1));
 		back.setBackground(LB);
 		
 		//Update label fonts
@@ -73,6 +79,11 @@ public class SearchDraw implements ActionListener {
 		lb_font(fill2, "Copperplate", 20, LB);
 		lb_font(fill3, "Copperplate", 20, LB);
 		lb_font(fill4, "Copperplate", 20, LB);
+		lb_font(res1, "Comic Sans", 14, B);
+		lb_font(res2, "Comic Sans", 14, B);
+		lb_font(res3, "Comic Sans", 14, B);
+		lb_font(res4, "Comic Sans", 14, B);
+		lb_font(res5, "Comic Sans", 14, B);
 		
 		//Set Action Listener to search bar & button
 		sf.addActionListener(this);
@@ -101,6 +112,8 @@ public class SearchDraw implements ActionListener {
 		back.add(res1);
 		back.add(res2);
 		back.add(res3);
+		back.add(res4);
+		back.add(res5);
 		back.add(buttonPan);
 		
 		open.add(back);
@@ -111,6 +124,7 @@ public class SearchDraw implements ActionListener {
 		open.setVisible(true);
 		open.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
+	
 	/*
 	 * Processes all Action Events that occur on screen
 	 * @param ActionEvent beta --> Action that occurred
@@ -122,14 +136,22 @@ public class SearchDraw implements ActionListener {
 			history.println(srchTerm);
 			
 			String[] list = search(srchTerm);
-			res1.setText(srchTerm);
-			res2.setText("Waiting");
-			res3.setText("Waiting");
-
+			if (list.length == 0){
+				res1.setText("Not Found");
+				res2.setText(" ");
+				res3.setText(" ");
+				res4.setText(" ");
+				res5.setText(" ");
+			}else{
+				res1.setText(list[0]);
+				res2.setText(list[1]);
+				res3.setText(list[2]);
+				res4.setText(list[3]);
+				res5.setText(list[4]);
+			}
 		}
 		
 		if (beta.getSource() == shButton){
-			
 			history.close();
 			Scanner hisRead = OpenFile.openToRead("history.txt");
 			History(hisRead);
@@ -141,9 +163,18 @@ public class SearchDraw implements ActionListener {
 	 * search calls on WikiSearch and returns the required list for display
 	 */
 	public String[] search(String term){
-		Map<String,Integer> help = wikisearch(term);
-		
-		
+		String[] words = term.split(" ");
+		WikiSearch total;
+		if (words.length >1){
+			total = WikiSearch.search(words[0]);
+			for (int x =1; x<words.length; x++){
+				WikiSearch help = WikiSearch.search(words[x]);
+				total = total.and(help);
+			}
+		}else{
+			total = WikiSearch.search(words[0]);
+		}
+		return total.list();	
 	}
 	
 	
